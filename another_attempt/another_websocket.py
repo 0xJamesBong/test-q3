@@ -1,7 +1,7 @@
 import sys
 import json
-import websocket
-import threading
+import websockets
+import asyncio
 import time
 from collections import defaultdict
 import pprint
@@ -11,9 +11,8 @@ pp = pprint.PrettyPrinter(indent=4)
 
 
 class BinanceWebsocket():
-    def __init__(self, socket='wss://stream.binance.com:9443/ws'):
-        self.pp = pprint.PrettyPrinter(indent=4)
-        self.socket = socket
+    def __init__(self, uri='wss://stream.binance.com:9443/ws'):
+        self.uri = uri
         self.orderbook = defaultdict(list)
         self.ws = None
 
@@ -30,13 +29,13 @@ class BinanceWebsocket():
 
         ws.send(json.dumps(subscribe_message))
 
-    def on_message(self, ws, message):
-        # print("Received a message")
+    async def on_message(self, ws, message):
+        print("Received a message")
         d = json.loads(message)
         bids = d.get('b')[:5]
         asks = d.get('a')[:5]
         u = d["u"]
-        # pp.pprint(d)
+        pp.pprint(d)
         self.orderbook['bids'] = bids
         self.orderbook['asks'] = asks
         self.orderbook['u'] = u
@@ -70,6 +69,11 @@ class BinanceWebsocket():
         #     ]
         #   ]
         # }
+    async def connect(self):
+        self.websocket = await websockets.connect(self.uri)
+        while True:
+            message = await self.websocket.recv()
+            await self.on_message(message)
 
     def on_close(self, ws):
         print("WebSocket closed")
@@ -77,28 +81,21 @@ class BinanceWebsocket():
     def on_error(self, ws, error):
         print(f"Error occurred: {error}")
 
-    def start_websocket(self):
-        self.ws = websocket.WebSocketApp(self.socket,
-                                         on_open=self.on_open,
-                                         on_message=self.on_message,
-                                         on_close=self.on_close,
-                                         on_error=self.on_error)
-
+    async def connect(self):
+        print("connected!")
+        self.websocket = await websockets.connect(self.uri)
         while True:
-            try:
-                self.ws.run_forever()
-            except Exception as e:
-                print(f"Exception occurred: {e}. Reconnecting...")
-                time.sleep(3)  # prevent aggressive reconnection
+            message = await self.websocket.recv()
+            await self.on_message(message)
 
-    def start(self):
-        wst = threading.Thread(target=self.start_websocket)
-        wst.daemon = True
-
-        wst.start()
+    async def start(self):
+        print("started!")
+        await self.connect()
 
 
-ws = BinanceWebsocket()
-ws.start()
-# Add this line to delay the end of the program
-time.sleep(10)
+async def main():
+    ws = BinanceWebsocket()
+    await ws.start()
+
+if __name__ == '__main__':
+    asyncio.run(main())
