@@ -16,8 +16,8 @@ import asyncio
 # ws.start()
 #  # Add this line to delay the end of the program
 # time.sleep(10)
-    
-class OrderBook():
+
+class OrderBookClient():
     def __init__(self, websocket, depth_api, symbol, volume):
         self.websocket = websocket
         self.depth_api = depth_api
@@ -30,7 +30,7 @@ class OrderBook():
     async def get_orders(self):
         received_snapshot = False
         print(self.symbol + " Average Execution Price for volume: " + str(self.volume))
-        
+
         # Starts the BinanceWebsocket in a new thread.
         self.websocket.start()
 
@@ -46,9 +46,8 @@ class OrderBook():
 
             self.process_updates()
             self.update_console()
-            await asyncio.sleep(0.01)  # You might need to adjust the sleep time.
-
-
+            # You might need to adjust the sleep time.
+            await asyncio.sleep(0.01)
 
     def get_depth_snapshot(self):
         snapshot = requests.get(self.depth_api)
@@ -66,11 +65,11 @@ class OrderBook():
             # pp.pprint(self.updates)
             # print(i, "u", self.updates[i]["u"])
             # print("snapshot['lastUpdatedId']", self.snapshot["lastUpdateId"])
-            # if type(self.updates[i]["u"]) == int: 
+            # if type(self.updates[i]["u"]) == int:
             #     print(i, self.updates[i])
-                # print("u", self.updates[i]["u"])
-            if type(self.updates[i]["u"]) == list: 
-                pass 
+            # print("u", self.updates[i]["u"])
+            if type(self.updates[i]["u"]) == list:
+                pass
             else:
                 # print(i, "u", self.updates[i]["u"])
                 # print("snapshot['lastUpdatedId']", self.snapshot["lastUpdateId"])
@@ -87,10 +86,10 @@ class OrderBook():
         # print(self.bids)
         # print(list(self.bids.items())[0][0])
 
-
     def update_console(self):
         # pass
-        print("\rBUY: %f\tSELL: %f" % (self.get_average_price(False), self.get_average_price(True)), end='')
+        print("\rBUY: %f\tSELL: %f" % (self.get_average_price(
+            False), self.get_average_price(True)), end='')
 
     # bid has value of False, ask has value of True for parameter side
     def get_average_price(self, side):
@@ -105,7 +104,7 @@ class OrderBook():
             curr_order = book[index]
             price = curr_order[0]
             volume = curr_order[1]
-            new_quantity = min(volume, self.volume-quantity) # volume filled
+            new_quantity = min(volume, self.volume-quantity)  # volume filled
             quantity += new_quantity
             avg += new_quantity*price
             index += 1
@@ -131,11 +130,12 @@ class OrderBook():
 
 #     # instantiate orderbook
 #     BTCUSDT_Book = OrderBook(websocket, f"https://www.binance.com/api/v1/depth?symbol={pair}&limit=1000", pair, volume)
-    
+
 #     # start receiving updates
 #     asyncio.get_event_loop().run_until_complete(BTCUSDT_Book.get_orders())
 
 websocket = BinanceWebsocket()
-BTCUSDT_Book = OrderBook(websocket, f"https://www.binance.com/api/v1/depth?symbol=BTCUSDT&limit=1000", "BTCUSDT", 10)
+BTCUSDT_Book = OrderBookClient(
+    websocket, f"https://www.binance.com/api/v1/depth?symbol=BTCUSDT&limit=1000", "BTCUSDT", 10)
 asyncio.get_event_loop().run_until_complete(BTCUSDT_Book.get_orders())
 # OrderBook.get_orders()
